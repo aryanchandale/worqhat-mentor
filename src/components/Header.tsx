@@ -1,10 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Menu, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    navigate('/signin');
+  };
+
+  const handleWatchDemo = () => {
+    navigate('/demo');
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-secondary/20">
@@ -31,9 +41,9 @@ const Header = () => {
             <a href="#roles" className="text-foreground/80 hover:text-primary transition-smooth">
               Roles
             </a>
-            <a href="#demo" className="text-foreground/80 hover:text-primary transition-smooth">
-              Demo
-            </a>
+              <a href="#demo" className="text-foreground/80 hover:text-primary transition-smooth" onClick={handleWatchDemo}>
+                Demo
+              </a>
             <a href="#pricing" className="text-foreground/80 hover:text-primary transition-smooth">
               Pricing
             </a>
@@ -41,10 +51,10 @@ const Header = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="outline" className="border-primary/30 hover:bg-primary/10">
-              Sign In
+            <Button variant="outline" className="border-primary/30 hover:bg-primary/10" asChild>
+              <Link to="/signin">Sign In</Link>
             </Button>
-            <Button className="bg-gradient-primary hover:shadow-glow transition-smooth">
+            <Button className="bg-gradient-primary hover:shadow-glow transition-smooth" onClick={handleGetStarted}>
               Get Started
             </Button>
           </div>
@@ -77,10 +87,10 @@ const Header = () => {
                 Pricing
               </a>
               <div className="flex flex-col gap-2 mt-4">
-                <Button variant="outline" className="border-primary/30 hover:bg-primary/10">
-                  Sign In
+                <Button variant="outline" className="border-primary/30 hover:bg-primary/10" asChild>
+                  <Link to="/signin">Sign In</Link>
                 </Button>
-                <Button className="bg-gradient-primary hover:shadow-glow transition-smooth">
+                <Button className="bg-gradient-primary hover:shadow-glow transition-smooth" onClick={handleGetStarted}>
                   Get Started
                 </Button>
               </div>

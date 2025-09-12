@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Users, GraduationCap, CheckCircle, UserCheck, BookOpen, PlusCircle, FileText, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const roles = [
   {
@@ -49,6 +50,7 @@ const roles = [
 ];
 
 const RolesSection = () => {
+  const navigate = useNavigate();
   return (
     <section className="py-24 px-6 bg-secondary/20">
       <div className="container mx-auto">
@@ -96,6 +98,7 @@ const RolesSection = () => {
                 <Button 
                   className={`w-full mt-6 bg-gradient-to-r from-primary to-accent hover:shadow-glow transition-smooth`}
                   size="lg"
+                  onClick={() => navigate('/signin')}
                 >
                   Join as {role.title}
                 </Button>

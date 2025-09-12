@@ -1,9 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, GraduationCap, Users, Award } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-bg.jpg";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    navigate('/signin');
+  };
+
+  const handleWatchDemo = () => {
+    navigate('/demo');
+  };
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -35,11 +45,11 @@ const HeroSection = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-          <Button size="lg" className="bg-gradient-primary hover:shadow-glow transition-smooth px-8 py-4 text-lg">
+          <Button size="lg" className="bg-gradient-primary hover:shadow-glow transition-smooth px-8 py-4 text-lg" onClick={handleGetStarted}>
             <GraduationCap className="w-5 h-5 mr-2" />
             Get Started
           </Button>
-          <Button size="lg" variant="outline" className="px-8 py-4 text-lg border-education-primary/30 hover:bg-education-primary/10">
+          <Button size="lg" variant="outline" className="px-8 py-4 text-lg border-education-primary/30 hover:bg-education-primary/10" onClick={handleWatchDemo}>
             Watch Demo
           </Button>
         </div>
