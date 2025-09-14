@@ -6,13 +6,24 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Mail, Lock, User, GraduationCap, Users, Shield } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState as useReactState } from "react";
 
 const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [defaultTab, setDefaultTab] = useReactState("signin");
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mode = params.get('mode');
+    if (mode === 'signup') {
+      setDefaultTab('signup');
+    }
+  }, [location.search]);
 
   const handleSignIn = async (role: string, email: string, password: string) => {
     setIsLoading(true);
@@ -171,7 +182,7 @@ const SignIn = () => {
             <CardDescription>Choose your role to continue</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs value={defaultTab} onValueChange={setDefaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>

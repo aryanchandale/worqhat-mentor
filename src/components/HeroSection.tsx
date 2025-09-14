@@ -8,7 +8,7 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    navigate('/signin');
+    navigate('/signin?mode=signup');
   };
 
   const handleWatchDemo = () => {
