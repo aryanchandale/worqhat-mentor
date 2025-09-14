@@ -11,15 +11,17 @@ const Demo = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isGrading, setIsGrading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [activeTab, setActiveTab] = useState<'assignment' | 'grading' | 'results'>('assignment');
 
   const startGrading = () => {
     setIsGrading(true);
     setShowResults(false);
-    
+    setActiveTab('grading');
     // Simulate AI grading process
     setTimeout(() => {
       setIsGrading(false);
       setShowResults(true);
+      setActiveTab('results');
     }, 3000);
   };
 
@@ -89,7 +91,7 @@ const Demo = () => {
               </div>
             </Link>
             <Button asChild variant="outline" className="border-primary/30">
-              <Link to="/signin">Try Full Platform</Link>
+              <Link to="/signin?mode=signin">Try Full Platform</Link>
             </Button>
           </div>
         </div>
@@ -113,7 +115,7 @@ const Demo = () => {
         </div>
 
         <div className="max-w-6xl mx-auto">
-          <Tabs defaultValue="assignment" className="w-full">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-8">
               <TabsTrigger value="assignment" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
@@ -325,7 +327,7 @@ const Demo = () => {
 
           <div className="text-center mt-12">
             <Button asChild className="bg-gradient-primary hover:shadow-glow transition-smooth" size="lg">
-              <Link to="/signin">
+              <Link to="/signin?mode=signin">
                 <Brain className="w-5 h-5 mr-2" />
                 Try the Full Platform
               </Link>

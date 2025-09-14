@@ -13,7 +13,16 @@ const Header = () => {
   };
 
   const handleWatchDemo = () => {
-    navigate('/demo');
+    handleNav('demo');
+  };
+
+  const handleNav = (target: 'features' | 'roles' | 'pricing' | 'demo') => {
+    if (target === 'demo') {
+      navigate('/demo');
+    } else {
+      navigate(`/#${target}`);
+    }
+    setIsMenuOpen(false);
   };
 
   return (
@@ -35,24 +44,24 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-foreground/80 hover:text-primary transition-smooth">
+            <button onClick={() => handleNav('features')} className="text-foreground/80 hover:text-primary transition-smooth">
               Features
-            </a>
-            <a href="#roles" className="text-foreground/80 hover:text-primary transition-smooth">
+            </button>
+            <button onClick={() => handleNav('roles')} className="text-foreground/80 hover:text-primary transition-smooth">
               Roles
-            </a>
-              <a href="#demo" className="text-foreground/80 hover:text-primary transition-smooth" onClick={handleWatchDemo}>
-                Demo
-              </a>
-            <a href="#pricing" className="text-foreground/80 hover:text-primary transition-smooth">
+            </button>
+            <button onClick={() => handleNav('demo')} className="text-foreground/80 hover:text-primary transition-smooth">
+              Demo
+            </button>
+            <button onClick={() => handleNav('pricing')} className="text-foreground/80 hover:text-primary transition-smooth">
               Pricing
-            </a>
+            </button>
           </nav>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
             <Button variant="outline" className="border-primary/30 hover:bg-primary/10" asChild>
-              <Link to="/signin">Sign In</Link>
+              <Link to="/signin?mode=signin">Sign In</Link>
             </Button>
             <Button className="bg-gradient-primary hover:shadow-glow transition-smooth" onClick={handleGetStarted}>
               Get Started
@@ -74,21 +83,21 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden mt-4 p-4 bg-secondary/20 rounded-xl border border-secondary/20">
             <nav className="flex flex-col gap-4">
-              <a href="#features" className="text-foreground/80 hover:text-primary transition-smooth">
+              <button onClick={() => handleNav('features')} className="text-foreground/80 hover:text-primary transition-smooth text-left">
                 Features
-              </a>
-              <a href="#roles" className="text-foreground/80 hover:text-primary transition-smooth">
+              </button>
+              <button onClick={() => handleNav('roles')} className="text-foreground/80 hover:text-primary transition-smooth text-left">
                 Roles
-              </a>
-              <a href="#demo" className="text-foreground/80 hover:text-primary transition-smooth">
+              </button>
+              <button onClick={() => handleNav('demo')} className="text-foreground/80 hover:text-primary transition-smooth text-left">
                 Demo
-              </a>
-              <a href="#pricing" className="text-foreground/80 hover:text-primary transition-smooth">
+              </button>
+              <button onClick={() => handleNav('pricing')} className="text-foreground/80 hover:text-primary transition-smooth text-left">
                 Pricing
-              </a>
+              </button>
               <div className="flex flex-col gap-2 mt-4">
                 <Button variant="outline" className="border-primary/30 hover:bg-primary/10" asChild>
-                  <Link to="/signin">Sign In</Link>
+                  <Link to="/signin?mode=signin">Sign In</Link>
                 </Button>
                 <Button className="bg-gradient-primary hover:shadow-glow transition-smooth" onClick={handleGetStarted}>
                   Get Started

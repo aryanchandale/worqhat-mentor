@@ -52,7 +52,7 @@ const roles = [
 const RolesSection = () => {
   const navigate = useNavigate();
   return (
-    <section className="py-24 px-6 bg-secondary/20">
+    <section id="roles" className="py-24 px-6 bg-secondary/20">
       <div className="container mx-auto">
         <div className="text-center mb-16">
           <Badge variant="secondary" className="mb-4 bg-secondary/50 border-primary/30">
