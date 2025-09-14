@@ -98,7 +98,7 @@ const RolesSection = () => {
                 <Button 
                   className={`w-full mt-6 bg-gradient-to-r from-primary to-accent hover:shadow-glow transition-smooth`}
                   size="lg"
-                  onClick={() => navigate('/signin')}
+                  onClick={() => navigate(`/signin?mode=signin&role=${role.title.toLowerCase()}`)}
                 >
                   Join as {role.title}
                 </Button>

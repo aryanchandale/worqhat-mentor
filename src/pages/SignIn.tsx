@@ -13,6 +13,7 @@ import { useEffect, useState as useReactState } from "react";
 const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [defaultTab, setDefaultTab] = useReactState("signin");
+  const [defaultRole, setDefaultRole] = useReactState("student");
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -20,8 +21,12 @@ const SignIn = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const mode = params.get('mode');
+    const role = params.get('role');
     if (mode === 'signup') {
       setDefaultTab('signup');
+    }
+    if (role && ['student', 'teacher', 'admin'].includes(role)) {
+      setDefaultRole(role);
     }
   }, [location.search]);
 
@@ -189,7 +194,7 @@ const SignIn = () => {
               </TabsList>
               
               <TabsContent value="signin">
-                <Tabs defaultValue="student" className="w-full">
+                <Tabs value={defaultRole} onValueChange={setDefaultRole} className="w-full">
                   <TabsList className="grid w-full grid-cols-3 mb-6">
                     <TabsTrigger value="student">Student</TabsTrigger>
                     <TabsTrigger value="teacher">Teacher</TabsTrigger>
@@ -209,7 +214,7 @@ const SignIn = () => {
               </TabsContent>
 
               <TabsContent value="signup">
-                <Tabs defaultValue="student" className="w-full">
+                <Tabs value={defaultRole} onValueChange={setDefaultRole} className="w-full">
                   <TabsList className="grid w-full grid-cols-3 mb-6">
                     <TabsTrigger value="student">Student</TabsTrigger>
                     <TabsTrigger value="teacher">Teacher</TabsTrigger>
