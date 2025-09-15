@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, Mail, Lock, User, GraduationCap, Users, Shield } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState as useReactState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [defaultTab, setDefaultTab] = useReactState("signin");
-  const [defaultRole, setDefaultRole] = useReactState("student");
+  const [defaultTab, setDefaultTab] = useState("signin");
+  const [defaultRole, setDefaultRole] = useState("student");
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -33,39 +33,113 @@ const SignIn = () => {
   const handleSignIn = async (role: string, email: string, password: string) => {
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Welcome back!",
-      description: `Signed in successfully as ${role}`,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    // Navigate to appropriate dashboard
-    navigate(`/dashboard/${role.toLowerCase()}`);
-    setIsLoading(false);
+      if (error) {
+        toast({
+          title: "Sign In Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get user profile to check role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        toast({
+          title: "Error",
+          description: "Could not fetch user profile",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (profile.role !== role) {
+        toast({
+          title: "Access Denied",
+          description: `You are not registered as a ${role}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Welcome back!",
+        description: `Signed in successfully as ${role}`,
+      });
+
+      navigate(`/dashboard/${role.toLowerCase()}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignUp = async (role: string, name: string, email: string, password: string) => {
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (role === 'teacher') {
-      toast({
-        title: "Registration Submitted",
-        description: "Your teacher registration is pending admin approval",
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: name,
+            role: role,
+          }
+        }
       });
-    } else {
+
+      if (error) {
+        toast({
+          title: "Sign Up Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (role === 'teacher') {
+        toast({
+          title: "Registration Submitted",
+          description: "Please check your email to verify your account, then contact an admin for approval",
+        });
+      } else if (role === 'admin') {
+        toast({
+          title: "Admin Registration",
+          description: "Admin accounts require approval from existing administrators",
+        });
+      } else {
+        toast({
+          title: "Account Created!",
+          description: "Please check your email to verify your account",
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Account Created!",
-        description: `Welcome to EduGrade AI, ${name}`,
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
       });
-      navigate(`/dashboard/${role.toLowerCase()}`);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   const roleIcons = {
