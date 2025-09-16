@@ -16,7 +16,7 @@ const Header = () => {
     handleNav('demo');
   };
 
-  const handleNav = (target: 'features' | 'roles' | 'pricing' | 'demo') => {
+  const handleNav = (target: 'features' | 'roles' | 'demo') => {
     if (target === 'demo') {
       navigate('/demo');
     } else {
@@ -36,9 +36,6 @@ const Header = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold">EduGrade AI</h1>
-              <Badge variant="outline" className="text-xs border-primary/30">
-                Beta
-              </Badge>
             </div>
           </div>
 
@@ -52,9 +49,6 @@ const Header = () => {
             </button>
             <button onClick={() => handleNav('demo')} className="text-foreground/80 hover:text-primary transition-smooth">
               Demo
-            </button>
-            <button onClick={() => handleNav('pricing')} className="text-foreground/80 hover:text-primary transition-smooth">
-              Pricing
             </button>
           </nav>
 
@@ -91,9 +85,6 @@ const Header = () => {
               </button>
               <button onClick={() => handleNav('demo')} className="text-foreground/80 hover:text-primary transition-smooth text-left">
                 Demo
-              </button>
-              <button onClick={() => handleNav('pricing')} className="text-foreground/80 hover:text-primary transition-smooth text-left">
-                Pricing
               </button>
               <div className="flex flex-col gap-2 mt-4">
                 <Button variant="outline" className="border-primary/30 hover:bg-primary/10" asChild>

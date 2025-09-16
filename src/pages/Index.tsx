@@ -2,7 +2,6 @@ import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import RolesSection from "@/components/RolesSection";
-import PricingSection from "@/components/PricingSection";
 import Footer from "@/components/Footer";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -27,7 +26,6 @@ const Index = () => {
         <HeroSection />
         <FeaturesSection />
         <RolesSection />
-        <PricingSection />
       </main>
       <Footer />
     </div>
