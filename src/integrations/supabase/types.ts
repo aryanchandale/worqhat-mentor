@@ -62,13 +62,6 @@ export type Database = {
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "assignments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       courses: {
@@ -117,22 +110,7 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "courses_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "courses_teacher_id_fkey"
-            columns: ["teacher_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       enrollments: {
         Row: {
@@ -167,13 +145,6 @@ export type Database = {
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "enrollments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
@@ -183,7 +154,6 @@ export type Database = {
           created_at: string
           email: string
           full_name: string
-          id: string
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -193,7 +163,6 @@ export type Database = {
           created_at?: string
           email: string
           full_name: string
-          id: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -203,7 +172,6 @@ export type Database = {
           created_at?: string
           email?: string
           full_name?: string
-          id?: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -301,20 +269,6 @@ export type Database = {
             referencedRelation: "assignments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "submissions_graded_by_fkey"
-            columns: ["graded_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "submissions_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       teacher_requests: {
@@ -351,22 +305,34 @@ export type Database = {
           status?: Database["public"]["Enums"]["approval_status"]
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "teacher_requests_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "teacher_requests_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string
+          id: string
+          password: string | null
+          role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name: string
+          id: string
+          password?: string | null
+          role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          password?: string | null
+          role?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
