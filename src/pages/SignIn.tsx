@@ -49,11 +49,10 @@ const SignIn = () => {
       }
 
       // Get user profile to check role
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
+      // @ts-expect-error - Supabase type inference issue
+      const profileResult = await supabase.from('profiles').select('role').eq('id', data.user.id);
+      const profile = profileResult.data?.[0];
+      const profileError = profileResult.error;
 
       if (profileError || !profile) {
         toast({

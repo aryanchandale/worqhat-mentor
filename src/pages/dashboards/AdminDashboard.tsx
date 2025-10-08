@@ -88,10 +88,9 @@ const AdminDashboard = () => {
     }
 
     if (status === 'approved') {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ role: 'teacher' })
-        .eq('id', userId);
+      // @ts-expect-error - Supabase type inference issue
+      const updateResult = await supabase.from('profiles').update({ role: 'teacher' }).eq('id', userId);
+      const profileError = updateResult.error;
 
       if (profileError) {
         toast({

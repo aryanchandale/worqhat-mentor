@@ -286,6 +286,7 @@ const TeacherDashboard = () => {
             <TabsTrigger value="courses">My Courses</TabsTrigger>
             <TabsTrigger value="create">Create Course</TabsTrigger>
             <TabsTrigger value="enrollments">Enrollment Requests</TabsTrigger>
+            <TabsTrigger value="submissions">Submissions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="courses" className="space-y-6">
@@ -371,9 +372,261 @@ const TeacherDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="submissions" className="space-y-6">
+            <SubmissionsTab teacherId={user?.id} />
+          </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
+  );
+};
+
+const SubmissionsTab = ({ teacherId }: { teacherId: string }) => {
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!teacherId) return;
+
+    const fetchSubmissions = async () => {
+      const { data: teacherCourses } = await supabase
+        .from('courses')
+        .select('id')
+        .eq('teacher_id', teacherId);
+
+      if (!teacherCourses || teacherCourses.length === 0) {
+        setIsLoading(false);
+        return;
+      }
+
+      const courseIds = teacherCourses.map(c => c.id);
+
+      const { data: submissionsData } = await supabase
+        .from('submissions')
+        .select(`
+          *,
+          assignments(title, course_id, max_points, courses(title)),
+          profiles(full_name, email),
+          submission_files(*)
+        `)
+        .in('assignments.course_id', courseIds)
+        .order('submitted_at', { ascending: false });
+
+      setSubmissions(submissionsData || []);
+      setIsLoading(false);
+    };
+
+    fetchSubmissions();
+  }, [teacherId]);
+
+  const handleGrade = async (submissionId: string, grade: number, feedback: string) => {
+    const { error } = await supabase
+      .from('submissions')
+      .update({
+        grade,
+        feedback,
+        graded_at: new Date().toISOString(),
+        graded_by: teacherId,
+        status: 'graded'
+      })
+      .eq('id', submissionId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to grade submission",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Submission graded successfully",
+    });
+
+    // Refresh submissions
+    setSubmissions(prev =>
+      prev.map(s =>
+        s.id === submissionId
+          ? { ...s, grade, feedback, graded_at: new Date().toISOString(), status: 'graded' }
+          : s
+      )
+    );
+  };
+
+  const downloadFile = async (filePath: string, fileName: string) => {
+    const { data, error } = await supabase.storage
+      .from('submission-files')
+      .download(filePath);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to download file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (isLoading) {
+    return <div>Loading submissions...</div>;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Student Submissions</CardTitle>
+        <CardDescription>Review and grade student assignments</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {submissions.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">
+            No submissions yet
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {submissions.map((submission) => (
+              <Card key={submission.id} className="border-secondary/20">
+                <CardContent className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <h4 className="font-semibold">{submission.assignments.title}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Student: {submission.profiles.full_name} ({submission.profiles.email})
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Course: {submission.assignments.courses.title}
+                        </p>
+                        <p className="text-sm">
+                          Submitted: {new Date(submission.submitted_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <Badge variant={submission.status === 'graded' ? 'default' : 'secondary'}>
+                        {submission.status}
+                      </Badge>
+                    </div>
+
+                    {submission.content && (
+                      <div className="space-y-1">
+                        <Label>Student Notes:</Label>
+                        <p className="text-sm p-3 bg-secondary/20 rounded">{submission.content}</p>
+                      </div>
+                    )}
+
+                    {submission.submission_files && submission.submission_files.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Submitted Files:</Label>
+                        <div className="space-y-2">
+                          {submission.submission_files.map((file: any) => (
+                            <div key={file.id} className="flex items-center justify-between p-2 border rounded">
+                              <span className="text-sm">{file.file_name}</span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => downloadFile(file.file_path, file.file_name)}
+                              >
+                                Download
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {submission.status !== 'graded' && (
+                      <GradeForm
+                        submissionId={submission.id}
+                        maxPoints={submission.assignments.max_points || 100}
+                        onGrade={handleGrade}
+                      />
+                    )}
+
+                    {submission.status === 'graded' && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-4">
+                          <Label>Grade:</Label>
+                          <span className="text-lg font-bold">
+                            {submission.grade}/{submission.assignments.max_points || 100}
+                          </span>
+                        </div>
+                        {submission.feedback && (
+                          <div className="space-y-1">
+                            <Label>Feedback:</Label>
+                            <p className="text-sm p-3 bg-secondary/20 rounded">{submission.feedback}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+const GradeForm = ({ 
+  submissionId, 
+  maxPoints, 
+  onGrade 
+}: { 
+  submissionId: string; 
+  maxPoints: number;
+  onGrade: (submissionId: string, grade: number, feedback: string) => void;
+}) => {
+  const [grade, setGrade] = useState("");
+  const [feedback, setFeedback] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const gradeNum = parseInt(grade);
+    if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > maxPoints) {
+      return;
+    }
+    onGrade(submissionId, gradeNum, feedback);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 border-t pt-4">
+      <div className="space-y-2">
+        <Label htmlFor={`grade-${submissionId}`}>Grade (out of {maxPoints})</Label>
+        <Input
+          id={`grade-${submissionId}`}
+          type="number"
+          min="0"
+          max={maxPoints}
+          value={grade}
+          onChange={(e) => setGrade(e.target.value)}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`feedback-${submissionId}`}>Feedback</Label>
+        <Textarea
+          id={`feedback-${submissionId}`}
+          value={feedback}
+          onChange={(e) => setFeedback(e.target.value)}
+          rows={3}
+          placeholder="Provide feedback for the student..."
+        />
+      </div>
+      <Button type="submit">Submit Grade</Button>
+    </form>
   );
 };
 
