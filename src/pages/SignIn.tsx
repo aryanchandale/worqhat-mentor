@@ -49,7 +49,6 @@ const SignIn = () => {
       }
 
       // Get user profile to check role
-      // @ts-expect-error - Supabase type inference issue
       const profileResult = await supabase.from('profiles').select('role').eq('id', data.user.id);
       const profile = profileResult.data?.[0];
       const profileError = profileResult.error;

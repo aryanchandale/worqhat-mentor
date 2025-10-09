@@ -134,6 +134,17 @@ const StudentDashboard = () => {
       return;
     }
 
+    // Get assignment details for AI grading
+    const assignment = assignments.find(a => a.id === selectedAssignment);
+    if (!assignment) {
+      toast({
+        title: "Error",
+        description: "Assignment not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Create submission record
     const { data: submission, error: submissionError } = await supabase
       .from('submissions')
@@ -183,13 +194,48 @@ const StudentDashboard = () => {
 
     toast({
       title: "Assignment Submitted",
-      description: "Your assignment has been submitted successfully",
+      description: "Your assignment has been submitted successfully. AI is now grading...",
+    });
+
+    // Call AI grading function in background
+    supabase.functions.invoke('grade-assignment', {
+      body: {
+        submissionContent: submissionText,
+        assignmentTitle: assignment.title,
+        assignmentInstructions: assignment.instructions || assignment.description,
+        maxPoints: assignment.max_points || 100
+      }
+    }).then(({ data: gradeData, error: gradeError }) => {
+      if (gradeError) {
+        console.error('AI grading error:', gradeError);
+        toast({
+          title: "AI Grading Failed",
+          description: "Your submission was saved, but AI grading failed. Teacher will review manually.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update submission with AI feedback
+      supabase
+        .from('submissions')
+        .update({
+          ai_feedback: gradeData.feedback,
+          grade: gradeData.suggestedGrade
+        })
+        .eq('id', submission.id)
+        .then(() => {
+          toast({
+            title: "AI Grading Complete",
+            description: `AI has graded your submission with ${gradeData.suggestedGrade}/${assignment.max_points || 100} points`,
+          });
+          fetchData();
+        });
     });
 
     setSelectedAssignment("");
     setSubmissionText("");
     setUploadedFiles([]);
-    fetchData();
   };
 
   if (isLoading) {
