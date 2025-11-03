@@ -14,9 +14,9 @@ serve(async (req) => {
   try {
     const { submissionContent, assignmentTitle, assignmentInstructions, maxPoints } = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const MISTRAL_API_KEY = Deno.env.get('MISTRAL_API_KEY');
+    if (!MISTRAL_API_KEY) {
+      throw new Error('MISTRAL_API_KEY is not configured');
     }
 
     console.log('Grading submission for assignment:', assignmentTitle);
@@ -59,15 +59,15 @@ ${submissionContent}
 
 Please evaluate this submission and provide comprehensive feedback.`;
 
-    // Call Lovable AI Gateway with Gemini
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call Mistral AI API
+    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'mistral-large-latest',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -77,7 +77,7 @@ Please evaluate this submission and provide comprehensive feedback.`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI Gateway error:', response.status, errorText);
+      console.error('Mistral API error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ 
@@ -88,16 +88,16 @@ Please evaluate this submission and provide comprehensive feedback.`;
         });
       }
       
-      if (response.status === 402) {
+      if (response.status === 401) {
         return new Response(JSON.stringify({ 
-          error: 'Payment required. Please add credits to your Lovable AI workspace.' 
+          error: 'Invalid API key. Please check your Mistral API configuration.' 
         }), {
-          status: 402,
+          status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       
-      throw new Error(`AI Gateway error: ${response.status}`);
+      throw new Error(`Mistral API error: ${response.status}`);
     }
 
     const data = await response.json();
