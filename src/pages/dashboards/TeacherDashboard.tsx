@@ -102,11 +102,19 @@ const TeacherDashboard = () => {
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       
+      // Get teacher's organization_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user?.id)
+        .single();
+
       const { error } = await supabase
         .from('courses')
         .insert({
           ...formData,
-          teacher_id: user?.id
+          teacher_id: user?.id,
+          organization_id: profile?.organization_id
         });
 
       if (error) {

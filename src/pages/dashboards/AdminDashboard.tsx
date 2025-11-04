@@ -3,19 +3,21 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Shield, Users, BookOpen, Clock, UserCheck, BookCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Users, BookOpen, Clock, BookCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<any>(null);
-  const [teacherRequests, setTeacherRequests] = useState<any[]>([]);
+  const [organization, setOrganization] = useState<any>(null);
   const [courseRequests, setCourseRequests] = useState<any[]>([]);
+  const [orgName, setOrgName] = useState("");
+  const [showCreateOrg, setShowCreateOrg] = useState(false);
   const [stats, setStats] = useState({
     totalUsers: 0,
-    totalCourses: 0,
-    pendingTeachers: 0,
+    activeCourses: 0,
     pendingCourses: 0
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -28,39 +30,57 @@ const AdminDashboard = () => {
 
       setUser(user);
 
-      // Fetch teacher approval requests
-      const { data: teachersData } = await supabase
-        .from('teacher_requests')
-        .select('*, profiles(full_name, email)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: true });
-
-      setTeacherRequests(teachersData || []);
-
-      // Fetch course approval requests
-      const { data: coursesData } = await supabase
-        .from('courses')
-        .select('*, profiles(full_name, email)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: true });
-
-      setCourseRequests(coursesData || []);
-
-      // Fetch stats
-      const { data: allUsers } = await supabase
+      // Check if admin has an organization
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('id');
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
 
-      const { data: allCourses } = await supabase
-        .from('courses')
-        .select('id, status');
+      if (profile?.organization_id) {
+        const { data: orgData } = await supabase
+          .from('organizations')
+          .select('*')
+          .eq('id', profile.organization_id)
+          .single();
+        
+        setOrganization(orgData);
+        
+        // Fetch pending course requests within organization
+        const { data: coursesData } = await supabase
+          .from('courses')
+          .select('*, profiles(full_name, email)')
+          .eq('organization_id', profile.organization_id)
+          .eq('status', 'pending');
 
-      setStats({
-        totalUsers: allUsers?.length || 0,
-        totalCourses: allCourses?.filter(c => c.status === 'approved').length || 0,
-        pendingTeachers: teachersData?.length || 0,
-        pendingCourses: coursesData?.length || 0
-      });
+        setCourseRequests(coursesData || []);
+
+        // Fetch organization-scoped stats
+        const { count: userCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', profile.organization_id);
+
+        const { count: courseCount } = await supabase
+          .from('courses')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', profile.organization_id)
+          .eq('status', 'approved');
+
+        const { count: pendingCourseCount } = await supabase
+          .from('courses')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', profile.organization_id)
+          .eq('status', 'pending');
+
+        setStats({
+          totalUsers: userCount || 0,
+          activeCourses: courseCount || 0,
+          pendingCourses: pendingCourseCount || 0
+        });
+      } else {
+        setShowCreateOrg(true);
+      }
 
       setIsLoading(false);
     };
@@ -68,47 +88,59 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
-  const handleTeacherApproval = async (requestId: string, userId: string, status: 'approved' | 'rejected') => {
-    const { error: requestError } = await supabase
-      .from('teacher_requests')
-      .update({
-        status,
-        reviewed_by: user?.id,
-        reviewed_at: new Date().toISOString()
-      })
-      .eq('id', requestId);
-
-    if (requestError) {
+  const handleCreateOrganization = async () => {
+    if (!orgName.trim()) {
       toast({
         title: "Error",
-        description: "Failed to update teacher request",
+        description: "Please enter an organization name",
         variant: "destructive",
       });
       return;
     }
 
-    if (status === 'approved') {
-      const updateResult = await supabase.from('profiles').update({ role: 'teacher' }).eq('id', userId);
-      const profileError = updateResult.error;
+    const { data, error: orgError } = await supabase
+      .from('organizations')
+      .insert([{
+        name: orgName,
+        created_by: user?.id,
+        code: '' // Will be auto-generated by trigger
+      }])
+      .select()
+      .single();
 
-      if (profileError) {
-        toast({
-          title: "Error",
-          description: "Failed to update user role",
-          variant: "destructive",
-        });
-        return;
-      }
+    if (orgError || !data) {
+      toast({
+        title: "Error",
+        description: "Failed to create organization",
+        variant: "destructive",
+      });
+      return;
     }
 
+    // Update admin profile with organization_id
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ organization_id: data.id })
+      .eq('id', user?.id);
+
+    if (profileError) {
+      toast({
+        title: "Error",
+        description: "Failed to link organization",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setOrganization(data);
+    setShowCreateOrg(false);
     toast({
       title: "Success",
-      description: `Teacher request ${status}`,
+      description: `Organization created with code: ${data.code}`,
     });
 
-    // Refresh teacher requests
-    setTeacherRequests(prev => prev.filter(req => req.id !== requestId));
-    setStats(prev => ({ ...prev, pendingTeachers: prev.pendingTeachers - 1 }));
+    // Reload page to fetch organization data
+    window.location.reload();
   };
 
   const handleCourseApproval = async (courseId: string, status: 'approved' | 'rejected') => {
@@ -140,7 +172,7 @@ const AdminDashboard = () => {
     setStats(prev => ({
       ...prev,
       pendingCourses: prev.pendingCourses - 1,
-      totalCourses: status === 'approved' ? prev.totalCourses + 1 : prev.totalCourses
+      activeCourses: status === 'approved' ? prev.activeCourses + 1 : prev.activeCourses
     }));
   };
 
@@ -152,11 +184,64 @@ const AdminDashboard = () => {
     );
   }
 
+  if (showCreateOrg && !organization) {
+    return (
+      <DashboardLayout role="admin" userName={user?.user_metadata?.full_name || user?.email || "Admin"}>
+        <div className="max-w-2xl mx-auto mt-12">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create Your Organization</CardTitle>
+              <CardDescription>
+                Set up your school or institution to get started
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="orgName">Organization Name</Label>
+                <Input
+                  id="orgName"
+                  placeholder="e.g., Springfield High School"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleCreateOrganization} className="w-full">
+                Create Organization
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout role="admin" userName={user?.user_metadata?.full_name || user?.email || "Admin"}>
       <div className="space-y-6">
+        {/* Organization Info */}
+        {organization && (
+          <Card className="bg-gradient-primary/10 border-primary/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">{organization.name}</h2>
+                  <p className="text-muted-foreground">Organization Code</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-mono font-bold text-primary">
+                    {organization.code}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Share this code with teachers and students
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -174,21 +259,9 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Active Courses</p>
-                  <p className="text-2xl font-bold">{stats.totalCourses}</p>
+                  <p className="text-2xl font-bold">{stats.activeCourses}</p>
                 </div>
                 <BookOpen className="w-8 h-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending Teachers</p>
-                  <p className="text-2xl font-bold">{stats.pendingTeachers}</p>
-                </div>
-                <Clock className="w-8 h-8 text-warning" />
               </div>
             </CardContent>
           </Card>
@@ -206,72 +279,10 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="teachers" className="space-y-6">
+        <Tabs defaultValue="courses" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="teachers">Teacher Requests</TabsTrigger>
             <TabsTrigger value="courses">Course Requests</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="teachers" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCheck className="w-5 h-5" />
-                  Teacher Approval Requests
-                </CardTitle>
-                <CardDescription>Review and approve teacher registration requests</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {teacherRequests.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No pending teacher requests
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {teacherRequests.map((request) => (
-                      <div key={request.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2">
-                            <div>
-                              <h4 className="font-semibold">{request.profiles.full_name}</h4>
-                              <p className="text-sm text-muted-foreground">{request.profiles.email}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <p><span className="font-medium">Qualification:</span> {request.qualification}</p>
-                              {request.experience && (
-                                <p><span className="font-medium">Experience:</span> {request.experience}</p>
-                              )}
-                              {request.reason && (
-                                <p><span className="font-medium">Reason:</span> {request.reason}</p>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              Requested: {new Date(request.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleTeacherApproval(request.id, request.user_id, 'approved')}
-                            >
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleTeacherApproval(request.id, request.user_id, 'rejected')}
-                            >
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="courses" className="space-y-6">
             <Card>
