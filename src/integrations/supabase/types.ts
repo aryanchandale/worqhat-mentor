@@ -74,6 +74,7 @@ export type Database = {
           grade_level: string | null
           id: string
           max_students: number | null
+          organization_id: string | null
           status: Database["public"]["Enums"]["approval_status"]
           subject: string
           teacher_id: string
@@ -89,6 +90,7 @@ export type Database = {
           grade_level?: string | null
           id?: string
           max_students?: number | null
+          organization_id?: string | null
           status?: Database["public"]["Enums"]["approval_status"]
           subject: string
           teacher_id: string
@@ -104,13 +106,22 @@ export type Database = {
           grade_level?: string | null
           id?: string
           max_students?: number | null
+          organization_id?: string | null
           status?: Database["public"]["Enums"]["approval_status"]
           subject?: string
           teacher_id?: string
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       enrollments: {
         Row: {
@@ -147,6 +158,33 @@ export type Database = {
           },
         ]
       }
+      organizations: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -155,6 +193,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          organization_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -165,6 +204,7 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          organization_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -175,10 +215,19 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          organization_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       submission_files: {
         Row: {
@@ -342,6 +391,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_org_code: { Args: never; Returns: string }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
