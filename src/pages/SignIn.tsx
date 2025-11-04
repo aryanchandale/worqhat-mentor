@@ -90,10 +90,29 @@ const SignIn = () => {
     }
   };
 
-  const handleSignUp = async (role: string, name: string, email: string, password: string) => {
+  const handleSignUp = async (role: string, name: string, email: string, password: string, orgCode?: string) => {
     setIsLoading(true);
     
     try {
+      // For students and teachers, validate organization code
+      if (role !== 'admin' && orgCode) {
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('code', orgCode.toUpperCase())
+          .single();
+
+        if (!org) {
+          toast({
+            title: "Invalid Organization Code",
+            description: "The organization code you entered is not valid",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -102,6 +121,7 @@ const SignIn = () => {
           data: {
             full_name: name,
             role: role,
+            organization_code: role !== 'admin' ? orgCode?.toUpperCase() : undefined
           }
         }
       });
@@ -115,15 +135,11 @@ const SignIn = () => {
         return;
       }
 
-      if (role === 'teacher') {
+      // For admin, create organization after signup
+      if (role === 'admin' && data.user) {
         toast({
-          title: "Registration Submitted",
-          description: "Please check your email to verify your account, then contact an admin for approval",
-        });
-      } else if (role === 'admin') {
-        toast({
-          title: "Admin Registration",
-          description: "Admin accounts require approval from existing administrators",
+          title: "Admin Account Created!",
+          description: "Please check your email to verify your account",
         });
       } else {
         toast({
@@ -196,7 +212,8 @@ const SignIn = () => {
     const [formData, setFormData] = useState({
       name: '',
       email: '',
-      password: ''
+      password: '',
+      orgCode: ''
     });
 
     const Icon = roleIcons[role as keyof typeof roleIcons];
@@ -207,7 +224,7 @@ const SignIn = () => {
         if (mode === 'signin') {
           handleSignIn(role, formData.email, formData.password);
         } else {
-          handleSignUp(role, formData.name, formData.email, formData.password);
+          handleSignUp(role, formData.name, formData.email, formData.password, formData.orgCode);
         }
       }}>
         <div className="space-y-4">
@@ -223,20 +240,38 @@ const SignIn = () => {
           </div>
 
           {mode === 'signup' && (
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="name"
-                  placeholder="Enter your full name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="pl-10"
-                  required
-                />
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="name"
+                    placeholder="Enter your full name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="pl-10"
+                    required
+                  />
+                </div>
               </div>
-            </div>
+              
+              {role !== 'admin' && (
+                <div className="space-y-2">
+                  <Label htmlFor="orgCode">Organization Code</Label>
+                  <Input
+                    id="orgCode"
+                    placeholder="Enter organization code"
+                    value={formData.orgCode}
+                    onChange={(e) => setFormData({...formData, orgCode: e.target.value.toUpperCase()})}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Get this code from your organization admin
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           <div className="space-y-2">
@@ -354,17 +389,12 @@ const SignIn = () => {
                     <AuthForm mode="signup" role="student" />
                   </TabsContent>
                   <TabsContent value="teacher">
-                    <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
-                      <p className="text-sm text-warning">
-                        Teacher accounts require admin approval before activation
-                      </p>
-                    </div>
                     <AuthForm mode="signup" role="teacher" />
                   </TabsContent>
                   <TabsContent value="admin">
                     <div className="mb-4 p-3 bg-info/10 border border-info/30 rounded-lg">
                       <p className="text-sm text-info">
-                        Admin accounts are created by existing administrators
+                        Admins can create organizations for their schools/institutions
                       </p>
                     </div>
                     <AuthForm mode="signup" role="admin" />
