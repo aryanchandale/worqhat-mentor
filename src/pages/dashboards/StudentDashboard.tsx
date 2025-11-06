@@ -343,43 +343,100 @@ const StudentDashboard = () => {
           </TabsContent>
 
           <TabsContent value="join" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Join Course with Code</CardTitle>
+                <CardDescription>Enter the course code provided by your teacher</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter course code (e.g., ABC12345)"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+                    className="flex-1 font-mono"
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!searchTerm) {
+                        toast({
+                          title: "Error",
+                          description: "Please enter a course code",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      const { data: course } = await supabase
+                        .from('courses')
+                        .select('id')
+                        .eq('course_code', searchTerm)
+                        .eq('status', 'approved')
+                        .single();
+
+                      if (!course) {
+                        toast({
+                          title: "Course Not Found",
+                          description: "Invalid course code or course not available",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      await handleJoinCourse(course.id);
+                      setSearchTerm("");
+                    }}
+                  >
+                    Join Course
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {availableCourses.length === 0 ? (
               <Card>
                 <CardContent className="p-12 text-center">
                   <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No Available Courses</h3>
-                  <p className="text-muted-foreground">Check back later for new courses!</p>
+                  <p className="text-muted-foreground">Use the course code above to join a course!</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {availableCourses.map((course) => (
-                  <Card key={course.id} className="border-secondary/20">
-                    <CardHeader>
-                      <CardTitle>{course.title}</CardTitle>
-                      <CardDescription>
-                        Teacher: {course.profiles?.full_name || 'Unknown'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="space-y-2 text-sm">
-                          <p><strong>Code:</strong> {course.course_code}</p>
-                          <p><strong>Subject:</strong> {course.subject}</p>
-                          {course.grade_level && <p><strong>Grade Level:</strong> {course.grade_level}</p>}
-                          {course.description && <p className="text-muted-foreground">{course.description}</p>}
+              <>
+                <div className="flex items-center gap-2 pt-4">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-sm text-muted-foreground">Or browse available courses</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {availableCourses.map((course) => (
+                    <Card key={course.id} className="border-secondary/20">
+                      <CardHeader>
+                        <CardTitle>{course.title}</CardTitle>
+                        <CardDescription>
+                          Teacher: {course.profiles?.full_name || 'Unknown'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="space-y-2 text-sm">
+                            <p><strong>Code:</strong> <span className="font-mono">{course.course_code}</span></p>
+                            <p><strong>Subject:</strong> {course.subject}</p>
+                            {course.grade_level && <p><strong>Grade Level:</strong> {course.grade_level}</p>}
+                            {course.description && <p className="text-muted-foreground">{course.description}</p>}
+                          </div>
+                          <Button 
+                            onClick={() => handleJoinCourse(course.id)}
+                            className="w-full"
+                          >
+                            Request to Join
+                          </Button>
                         </div>
-                        <Button 
-                          onClick={() => handleJoinCourse(course.id)}
-                          className="w-full"
-                        >
-                          Request to Join
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
             )}
           </TabsContent>
 

@@ -391,6 +391,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_course_code: { Args: never; Returns: string }
       generate_org_code: { Args: never; Returns: string }
       get_user_role: {
         Args: { user_uuid: string }

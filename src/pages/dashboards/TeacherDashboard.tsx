@@ -95,7 +95,6 @@ const TeacherDashboard = () => {
       description: '',
       subject: '',
       grade_level: '',
-      course_code: '',
       max_students: 30
     });
 
@@ -112,9 +111,14 @@ const TeacherDashboard = () => {
       const { error } = await supabase
         .from('courses')
         .insert({
-          ...formData,
+          title: formData.title,
+          description: formData.description,
+          subject: formData.subject,
+          grade_level: formData.grade_level,
+          max_students: formData.max_students,
           teacher_id: user?.id,
-          organization_id: profile?.organization_id
+          organization_id: profile?.organization_id,
+          course_code: ''
         });
 
       if (error) {
@@ -136,7 +140,6 @@ const TeacherDashboard = () => {
         description: '',
         subject: '',
         grade_level: '',
-        course_code: '',
         max_students: 30
       });
     };
@@ -154,26 +157,14 @@ const TeacherDashboard = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Course Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="course_code">Course Code</Label>
-                <Input
-                  id="course_code"
-                  value={formData.course_code}
-                  onChange={(e) => setFormData({...formData, course_code: e.target.value})}
-                  placeholder="e.g., MATH101"
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="title">Course Title</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                required
+              />
             </div>
             
             <div className="space-y-2">
@@ -319,10 +310,30 @@ const TeacherDashboard = () => {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{course.description}</p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>Code: {course.course_code}</span>
-                          <span>Subject: {course.subject}</span>
-                          {course.grade_level && <span>Grade: {course.grade_level}</span>}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>Subject: {course.subject}</span>
+                            {course.grade_level && <span>Grade: {course.grade_level}</span>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Course Code:</span>
+                            <Badge variant="outline" className="text-base font-mono">
+                              {course.course_code}
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                navigator.clipboard.writeText(course.course_code);
+                                toast({
+                                  title: "Copied!",
+                                  description: "Course code copied to clipboard",
+                                });
+                              }}
+                            >
+                              Copy
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
