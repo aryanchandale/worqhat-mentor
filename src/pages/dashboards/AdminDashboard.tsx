@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, BookOpen, Clock, BookCheck } from "lucide-react";
+import { Users, BookOpen, Clock, BookCheck, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,6 +21,7 @@ const AdminDashboard = () => {
     pendingCourses: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [copiedCode, setCopiedCode] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -134,13 +135,12 @@ const AdminDashboard = () => {
 
     setOrganization(data);
     setShowCreateOrg(false);
+    setIsLoading(false);
     toast({
-      title: "Success",
-      description: `Organization created with code: ${data.code}`,
+      title: "Organization Created!",
+      description: `Your organization code is ${data.code}. Share this with teachers and students to join.`,
+      duration: 10000,
     });
-
-    // Reload page to fetch organization data
-    window.location.reload();
   };
 
   const handleCourseApproval = async (courseId: string, status: 'approved' | 'rejected') => {
@@ -228,8 +228,29 @@ const AdminDashboard = () => {
                   <p className="text-muted-foreground">Organization Code</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-mono font-bold text-primary">
-                    {organization.code}
+                  <div className="flex items-center gap-2 justify-end">
+                    <div className="text-3xl font-mono font-bold text-primary">
+                      {organization.code}
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        navigator.clipboard.writeText(organization.code);
+                        setCopiedCode(true);
+                        setTimeout(() => setCopiedCode(false), 2000);
+                        toast({
+                          title: "Copied!",
+                          description: "Organization code copied to clipboard",
+                        });
+                      }}
+                    >
+                      {copiedCode ? (
+                        <Check className="w-5 h-5 text-success" />
+                      ) : (
+                        <Copy className="w-5 h-5" />
+                      )}
+                    </Button>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     Share this code with teachers and students
