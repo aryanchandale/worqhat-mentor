@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, BookOpen, Clock, BookCheck, Copy, Check } from "lucide-react";
+import { Users, BookOpen, Clock, BookCheck, Copy, Check, QrCode, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import QRCode from "react-qr-code";
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -22,7 +24,37 @@ const AdminDashboard = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const getSignupUrl = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/sign-in?code=${organization?.code || ''}`;
+  };
+
+  const downloadQRCode = () => {
+    const svg = document.getElementById('qr-code');
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL('image/png');
+
+      const downloadLink = document.createElement('a');
+      downloadLink.download = `${organization?.name}-QR-Code.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+
+    img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -251,6 +283,41 @@ const AdminDashboard = () => {
                         <Copy className="w-5 h-5" />
                       )}
                     </Button>
+                    <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="icon" variant="ghost">
+                          <QrCode className="w-5 h-5" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Organization QR Code</DialogTitle>
+                          <DialogDescription>
+                            Teachers and students can scan this QR code to join your organization
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex flex-col items-center gap-4 py-4">
+                          <div className="bg-white p-4 rounded-lg">
+                            <QRCode
+                              id="qr-code"
+                              value={getSignupUrl()}
+                              size={256}
+                              level="H"
+                            />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-medium">Organization Code</p>
+                            <p className="text-2xl font-mono font-bold text-primary">
+                              {organization.code}
+                            </p>
+                          </div>
+                          <Button onClick={downloadQRCode} className="w-full">
+                            <Download className="w-4 h-4 mr-2" />
+                            Download QR Code
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     Share this code with teachers and students

@@ -16,6 +16,7 @@ const SignIn = () => {
   const [defaultRole, setDefaultRole] = useState("student");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [urlOrgCode, setUrlOrgCode] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -24,11 +25,17 @@ const SignIn = () => {
     const params = new URLSearchParams(location.search);
     const mode = params.get('mode');
     const role = params.get('role');
+    const code = params.get('code');
+    
     if (mode === 'signup') {
       setDefaultTab('signup');
     }
     if (role && ['student', 'teacher', 'admin'].includes(role)) {
       setDefaultRole(role);
+    }
+    if (code) {
+      setUrlOrgCode(code.toUpperCase());
+      setDefaultTab('signup'); // Switch to signup tab when code is provided
     }
   }, [location.search]);
 
@@ -213,8 +220,15 @@ const SignIn = () => {
       name: '',
       email: '',
       password: '',
-      orgCode: ''
+      orgCode: urlOrgCode || ''
     });
+
+    // Update formData when urlOrgCode changes
+    useEffect(() => {
+      if (urlOrgCode) {
+        setFormData(prev => ({ ...prev, orgCode: urlOrgCode }));
+      }
+    }, [urlOrgCode]);
 
     const Icon = roleIcons[role as keyof typeof roleIcons];
 
